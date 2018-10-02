@@ -1,0 +1,62 @@
+syntax="proto2";
+package example;
+
+option cc_generic_services = true;
+
+// --------------- register service -----------------
+message RegisterRequest {
+    required uint32 port = 1;
+};
+
+message RegisterResponse {
+      required bool status = 1;
+};
+
+service RegisterService {
+      rpc RegisterClient(RegisterRequest) returns (RegisterResponse);
+};
+
+// -------------- agent heart beat service ------------
+message HeartBeatRequest {
+}
+
+message HeartBeatResponse {
+    required int32 status = 1;
+}
+
+service HeartBeatService {
+    //TODO can here be more than one parameters?
+    rpc HeartBeat(HeartBeatRequest) returns (HeartBeatResponse);
+}
+
+// -------------- agent cmd service -----------------
+
+message CmdRequest {
+    required string cmd = 1;
+    optional string arguments = 2;
+}
+
+message CmdResponse {
+    required int32 return_code = 1;
+    required string return_string = 2;
+}
+
+service AgentService {
+    rpc RunCmdOnAgent(CmdRequest) returns (CmdResponse);
+}
+
+// ------------- server cmd service -----------------
+message ServerCmdRequest {
+    required string ip = 1;
+    required string cmd = 2;
+    optional string arguments = 3;
+}
+
+message ServerCmdResponse {
+    required int32 return_code = 1;
+    required string return_string = 2;
+}
+
+service ServerCmdService {
+    rpc SendCmdToAgent(ServerCmdRequest) returns (ServerCmdResponse);
+}
