@@ -20,6 +20,7 @@ DEFINE_int32(max_retry, 3, "Max retries(not including the first RPC)");
 DEFINE_int32(port, 7777, "TCP Port of this server");
 DEFINE_int32(idle_timeout_s, -1, "Connection will be closed if there is no "
              "read/write operations during the last `idle_timeout_s'");
+DEFINE_int32(loglevel, 0, "Minimum log level (INFO is 0)");
 
 namespace example {
 
@@ -144,7 +145,7 @@ public:
                            google::protobuf::Closure *done) {
         brpc::ClosureGuard done_guard(done);
         brpc::Controller *cntl = static_cast<brpc::Controller*>(cntl_base);
-        LOG(INFO) << "Received heart beat request from " << cntl->remote_side() 
+        VLOG(2) << "Received heart beat request from " << cntl->remote_side() 
                   << " to " << cntl->local_side();
         // update timer
         in_addr_t ip = butil::ip2int(cntl->remote_side().ip);
@@ -238,13 +239,22 @@ private:
 
 int main(int argc, char* argv[]) {
     GFLAGS_NS::ParseCommandLineFlags(&argc, &argv, true);
+    // log to file
+    logging::LoggingSettings settings;
+    settings.logging_dest = logging::LOG_TO_FILE;
+    if (!logging::InitLogging(settings)) {
+        fprintf(stderr, "Fail to initialize logging components");
+        return -1;
+    }
+    logging::SetMinLogLevel(FLAGS_loglevel);
 
     brpc::Server server;
 
     example::RegisterServiceImpl registerServiceImpl;
     // TODO why not brace
     // OK:
-    auto registerServicePtr = std::shared_ptr<example::RegisterServiceImpl>(&registerServiceImpl);
+    auto registerServicePtr =
+        std::shared_ptr<example::RegisterServiceImpl>(&registerServiceImpl);
     example::HeartBeatServiceImpl heartBeatServiceImpl(registerServicePtr);
     //
     // not OK:

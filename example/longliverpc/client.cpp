@@ -20,6 +20,7 @@ DEFINE_int32(port, 9999, "TCP port of every client (as AgentService)");
 DEFINE_string(load_balancer, "", "The algorithm for load balancing");
 DEFINE_int32(timeout_ms, 100, "RPC timeout in milliseconds");
 DEFINE_int32(max_retry, 3, "Max retries(not including the first RPC)"); 
+DEFINE_int32(loglevel, 0, "Minimum log level (INFO is 0)");
 
 namespace example {
 
@@ -73,6 +74,14 @@ public:
 
 int main(int argc, char *argv[]) {
     GFLAGS_NS::ParseCommandLineFlags(&argc, &argv, true);
+    // log to file
+    logging::LoggingSettings settings;
+    settings.logging_dest = logging::LOG_TO_FILE;
+    if (!logging::InitLogging(settings)) {
+        fprintf(stderr, "Fail to initialize logging components");
+        return -1;
+    }
+    logging::SetMinLogLevel(FLAGS_loglevel);
 
     brpc::Server server;
     example::AgentServiceImpl agentServiceImpl;
@@ -127,7 +136,7 @@ int main(int argc, char *argv[]) {
         brpc::Controller hbCntl;
         heartBeatStub.HeartBeat(&hbCntl, &hbRequest, &hbResponse, NULL);
         if (!hbCntl.Failed() && 0 == hbResponse.status()) {
-            LOG(INFO) << "Receive heart beat response from server. "
+            VLOG(2) << "Receive heart beat response from server. "
                       << " latency=" << hbCntl.latency_us() << "us";
         } else {
             LOG(WARNING) << "Fail to heart beat. "
